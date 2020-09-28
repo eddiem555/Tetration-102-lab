@@ -26,6 +26,8 @@ import env as env
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 ######################################################################
+# Get sensors
+######################################################################
 def get_sensors(
     host=env.TET_HOST.get("host"),
     api_key=env.TET_API_KEY,
@@ -51,16 +53,17 @@ def get_sensors(
         print(f"IP Address {value} can not be found. Error code {response.status_code}.")
 
 ######################################################################
+# Print sensors
+######################################################################
 def print_sensors( sensor_data ):
 
-    print ('\033[1m', "{:<20} {:<12} {:<20} {:<30}".format('HOSTNAME',
-        'TYPE','IP ADDRESS', 'PLATFORM'), '\033[0m')
-    for scope in sensor_data["results"]:
-        sensor_hostname = scope["host_name"]
-        sensor_type = scope["agent_type"]
-        sensor_platform = scope["platform"]
+    print ('\033[1m',"{:<20} {:<12} {:<20} {:<30}".format('HOSTNAME', 'TYPE','IP ADDRESS', 'PLATFORM'), '\033[0m')
+    for sensor in sensor_data["results"]:
+        sensor_hostname = sensor["host_name"]
+        sensor_type = sensor["agent_type"]
+        sensor_platform = sensor["platform"]
 
-        for nic in scope["interfaces"]:
+        for nic in sensor["interfaces"]:
             # If tags exist on this NIC we can assume this is the IP we want to print
             if nic["tags"]:
                 sensor_ip = nic["ip"]
@@ -68,7 +71,7 @@ def print_sensors( sensor_data ):
         print ("{:<20} {:<12} {:<20} {:<30}".format(sensor_hostname, sensor_type, sensor_ip, sensor_platform))
 
 ######################################################################
-# MAIN START
+# MAIN 
 ######################################################################
 if __name__ == "__main__":
 
