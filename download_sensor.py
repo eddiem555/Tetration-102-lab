@@ -26,13 +26,36 @@ import env as env
 # Disable insecure request warnings
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+#######################################################################
+# Get version string given agent data
 ######################################################################
-# Get sensors
-######################################################################
-def get_sensors(
-    host=env.TET_HOST.get("host"),
-    api_key=env.TET_API_KEY,
-    api_sec=env.TET_API_SEC):
+def download_agent(p_opt, t_opt):
+
+    agent_metadata = [ { "option":None, "prefix":None, "suffix":None, "arch":None, "extension":None, "platform":None },
+                       { "option":1, "prefix":"tet-win-sensor-", "suffix":".win64", "arch":"x86_64", "extension":".zip", "platform":"MSWindows10Pro" },
+                       { "option":2, "prefix":"tet-sensor-", "suffix":".el5", "arch":"x86_64", "extension":".rpm", "platform":"CentOS-5.11" },
+                       { "option":3, "prefix":"tet-sensor-", "suffix":".el6", "arch":"x86_64", "extension":".rpm", "platform":"CentOS-6.10" },
+                       { "option":4, "prefix":"tet-sensor-", "suffix":".el7", "arch":"x86_64", "extension":".rpm", "platform":"CentOS-7.8" },
+                       { "option":5, "prefix":"tet-sensor-", "suffix":".el8", "arch":"x86_64", "extension":".rpm", "platform":"CentOS-8.2" },
+                       { "option":6, "prefix":"tet-sensor-", "suffix":".sles11", "arch":"x86_64", "extension":".rpm", "platform":"SUSELinuxEnterpriseServer-11.4" },
+                       { "option":7, "prefix":"tet-sensor-", "suffix":".sles11", "arch":"s390x", "extension":".rpm", "platform":"SUSELinuxEnterpriseServer-11.4" },
+                       { "option":8, "prefix":"tet-sensor-", "suffix":".sles12", "arch":"s390x", "extension":".rpm", "platform":"SUSELinuxEnterpriseServer-12.5" },
+                       { "option":9, "prefix":"tet-sensor-lw-", "suffix":".lw-linux-amd64", "arch":"amd64", "extension":".zip", "platform":"linux-amd64" },
+                       { "option":10, "prefix":"tet-sensor-lw-", "suffix":".lw-linux-386", "arch":"386", "extension":".zip", "platform":"linux-amd64" },
+                       { "option":11, "prefix":"tet-sensor-lw-", "suffix":".lw-aix-ppc", "arch":"ppc", "extension":".zip", "platform":"AIX-7.2" },
+                       { "option":12, "prefix":"tet-sensor-lw-", "suffix":".lw-solaris-amd64", "arch":"amd64", "extension":".zip", "platform":"AIX-7.2" } ]
+
+    agent_platform = agent_metadata[p_opt]['platform']
+    agent_arch = agent_metadata[p_opt]['arch']
+
+    if t_opt == 1:
+        agent_type = "sensor"
+    else:
+        agent_type = "enforcer"
+
+    host=env.TET_HOST.get("host")
+    api_key=env.TET_API_KEY
+    api_sec=env.TET_API_SEC
 
     # Build URL
     url = f"https://{host}"
@@ -42,71 +65,54 @@ def get_sensors(
                             api_secret=api_sec,
                             verify=True)
 
-    # HTTP Get Request
-    response = restclient.get("/sensors")
-
-    # If successful response code return list sensors 
-    if response.status_code == 200:
-        return response.json()
-
-    # If response code is anything but 200, print error message with response code
-    else:
-        print(f"IP Address {value} can not be found. Error code {response.status_code}.")
-
-#######################################################################
-# Get available sensor platforms
-######################################################################
-def get_available_platforms(
-    host=env.TET_HOST.get("host"),
-    api_key=env.TET_API_KEY,
-    api_sec=env.TET_API_SEC):
-
-    # Build URL
-    url = f"https://{host}"
- 
-    restclient = RestClient(url,
-                            api_key=api_key,
-                            api_secret=api_sec,
-                            verify=True)
-
-    # HTTP Get Request
-    #response = restclient.get('/sw_assets/platforms')
-
-    #response = restclient.download('tet-sensor-3.3.2.16-1.el7.x86_64.zip',
-    #'/sw_assets/download?platform=CentOS-7.7&agent_type=enforcer&arch=x86_64')
-    #print (json.dumps(response.json(), indent=2))
-    # response = restclient.get("/sw_assets/download?platform=<platform>&agent_type=<agent_type>&pkg_type=<pkg_type>&arch=<arch>&list_version=<list_version>")
-    response = restclient.download('/sw_assets/download?platform=CentOS-6.6&pkg_type=sensor_w_cfg&arch=x86_64&list_version=True')
-    # SAMPLE '/sw_assets/download?platform=OracleServer-6.3&pkg_type=sensor_w_cfg&arch=x86_64&list_version=True'
+    print (" Getting supported agent version...")
+    get_ver_url = "/sw_assets/download?platform=" + agent_platform + "&agent_type=" + agent_type + "&arch=" + agent_arch + "&list_version=True"
+    response = restclient.get(get_ver_url)
 
     if response.status_code == 200:
-        print (json.dumps(response.json(), indent=2))
-        return response.json()
-
-    # If response code is anything but 200, print error message with response code
+        versions = response.content.decode('utf-8').splitlines()
+        agent_version = versions[0].strip()
     else:
-        print(f"Error retrieving agent platforms: {response.status_code}.")
+        print(f"Error retrieving agent version: {response.status_code}.")
 
+    # Now that we retrieved the supported version, we can form the complete filename
+    agent_filename = agent_metadata[p_opt]['prefix'] + agent_version + agent_metadata[p_opt]['suffix'] + '.' + agent_arch + agent_metadata[p_opt]['extension']
+
+    # Now that we have the filename, we can create the download URL
+    download_url = "/sw_assets/download?platform=" + agent_platform + "&agent_type=" + agent_type + "&arch=" + agent_arch
+
+    # Download agent
+    print (" Downloading agent...")
+    response = restclient.download(agent_filename, download_url)
+
+    if not response.status_code == 200:
+        print(f"Error retrieving agent version: {response.status_code}.")
+
+    return agent_filename
 
 
 #######################################################################
-# Utility function to accept numberical input or exit
+# Utility function to accept ranged numeric input or exit
 ######################################################################
-def get_digit_input (input_str):
+def get_digit_input (minval, maxval, input_str):
     print(" Q)  QUIT/CANCEL \n")
     inp = input(input_str)
     if not inp.isdigit():
+        # Assume q for any non-numeric and exit
         sys.exit()
     else:
         ret = int(inp)
+
+    if (ret < minval or ret > maxval):
+        print(f"Error: Input value outside of supported range")
+        sys.exit()
+
     return ret
 
 #######################################################################
 # Allow user to choose sensor platform/type/arch to download
 ######################################################################
-def sensor_chooser( platform_data ):
-
-    agent_os_ver = 0
+def agent_chooser( ):
 
     print("\n Available Agent Platforms")
     print(" 1)  Windows (x86_64)")
@@ -121,29 +127,23 @@ def sensor_chooser( platform_data ):
     print(" 10) Universal Linux (386)")
     print(" 11) AIX (ppc)")
     print(" 12) Solaris (amd64)")
-    agent_os_ver = get_digit_input(" Choose Tetration agent platform to download (1-12): ")
+    platform_opt = get_digit_input(1, 12, " Choose Tetration agent platform to download (1-12): ")
 
     print("\n Available Agent Types")
     print(" 1)  Deep Visibility Agent")
     print(" 2)  Enforcement Agent")
-    agent_type = get_digit_input(" Choose agent type to download (1-2): ")
+    type_opt = get_digit_input(1, 2, " Choose agent type to download (1-2): ")
 
-    agent_metadata = { "osversion":agent_os_ver, "type":agent_type }
+    filename = download_agent(platform_opt, type_opt)
+
+    return filename
     
-    agent_list = [ { "option":None, "filename":None, "version":None, "type":None, "platform":None, "arch":None },
-                   { "option":1, "filename":"tet-win-sensor-3.4.1.6.win64-tet-pov-rtp1.enforcer.zip",
-                     "version":"3.4.1.6.win64-sensor", "type":"sensor", "arch":"x86_64" },
-                   { "option":1, "filename":"tet-win-sensor-3.4.1.6.win64-tet-pov-rtp1.enforcer.zip",
-                     "version":"3.4.1.6.win64-sensor", "type":"sensor", "arch":"x86_64" },
-    ]
-
 ######################################################################
 # MAIN
 ######################################################################
 if __name__ == "__main__":
 
-    # Get all sensors
-    available_platforms = get_available_platforms()
+    # Allow user to choose sensor
+    agent_filename = agent_chooser();
 
-    # Allow user to choose sensors
-    #download_platform = sensor_chooser(available_platforms);
+    print (" Success! Look for "+ agent_filename + " in current directory\n")
