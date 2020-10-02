@@ -29,7 +29,4 @@ SOFTWARE.
 # Tetration API Credentials
 TET_API_KEY = "<SUB_TET_API_KEY>"
 TET_API_SEC = "<SUB_TET_API_SECRET>"
-
-
-TET_HOST_FQDN = {"host": "<SUB_TET_HOST_FQDN>"}
-
+TET_HOST = {"host": "<SUB_TET_HOST_FQDN>"}

@@ -57,25 +57,26 @@ def get_tet_json(request_str,
 ######################################################################
 # Print packages
 ######################################################################
-def get_vulnerabilities ( sensor_data ):
+def get_vulnerabilities ( sensor_data, v3_min_score ):
 
     for sensor in sensor_data["results"]:
         sensor_hostname = sensor["host_name"]
-        sensor_type = sensor["agent_type"]
-        sensor_platform = sensor["platform"]
         sensor_uuid = sensor["uuid"]
-
-        print ("{:<20} {:<20} {:<30}".format('HOSTNAME', 'TYPE', 'PLATFORM'))
-        print ("{:<20} {:<20} {:<30}".format(sensor_hostname, sensor_type, sensor_platform))
-        print ("===========================================================\n")
+        for nic in sensor["interfaces"]:
+            # If tags exist on this NIC we can assume this is the IP we want to print
+            if nic["tags"]:
+                sensor_ip = nic["ip"]
 
         vulnerabilities = get_tet_json("/workload/" + sensor_uuid + "/vulnerabilities");
 
-        # If CVSS score >= 7, print the CVE ID, v2 score, package name and version
-        print ("{:<16} {:<8} {:<20} {:40}".format('CVE ID', 'SCORE', 'PACKAGE', 'VERSION'))
+        # If CVSS score >= <v3_min_score>, print the CVE ID, v2 score, package name and version
+        print ("\n")
+        print ("{:<18} {:<16} {:<16} {:<10} {:<10} {:<16} {:20}".format(
+               'HOSTNAME', 'IP', 'CVE ID', 'SCORE(V2)', 'SCORE(V3)', 'PACKAGE', 'VERSION'))
         for vul in vulnerabilities:
-            if ( vul['v2_score'] >= 7.0 ):
-                print ("{:<16} {:<8} {:<20} {:40}".format(vul['cve_id'], vul['v2_score'],
+            if ( vul['v2_score'] >= v3_min_score):
+                print ("{:<18} {:16} {:<16} {:<10} {:<10} {:<16} {:20}".format(
+                       sensor_hostname, sensor_ip, vul['cve_id'], vul['v2_score'], vul['v3_score'],
                        vul['package_infos'][0]['name'], vul['package_infos'][0]['version']))
 
 ######################################################################
@@ -86,5 +87,6 @@ if __name__ == "__main__":
     # Get all sensors
     sensors = get_tet_json("/sensors")
 
-    # For each sensor print vulnerabilities found
-    get_vulnerabilities(sensors)
+    # For each sensor print vulnerabilities found with CVSS score >= <min_score>
+    v3_min_score = 8.0
+    get_vulnerabilities(sensors, v3_min_score)
