@@ -69,12 +69,12 @@ def get_vulnerabilities ( sensor_data, v3_min_score ):
 
         vulnerabilities = get_tet_json("/workload/" + sensor_uuid + "/vulnerabilities");
 
-        # If CVSS score >= <v3_min_score>, print the CVE ID, v2 score, package name and version
+        # If CVSS score >= <v3_min_score>, print the CVE ID, scores, package name and version
         print ("\n")
         print ("{:<18} {:<16} {:<16} {:<10} {:<10} {:<16} {:20}".format(
                'HOSTNAME', 'IP', 'CVE ID', 'SCORE(V2)', 'SCORE(V3)', 'PACKAGE', 'VERSION'))
         for vul in vulnerabilities:
-            if ( vul['v2_score'] >= v3_min_score):
+            if ( vul['v3_score'] >= v3_min_score):
                 print ("{:<18} {:16} {:<16} {:<10} {:<10} {:<16} {:20}".format(
                        sensor_hostname, sensor_ip, vul['cve_id'], vul['v2_score'], vul['v3_score'],
                        vul['package_infos'][0]['name'], vul['package_infos'][0]['version']))
