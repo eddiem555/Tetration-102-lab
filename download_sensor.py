@@ -31,7 +31,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 ######################################################################
 def download_agent(agent_options):
 
-    # Ordered metadata used to construct the filename.
+    # Ordered metadata used to construct the filename
     agent_metadata = [ { "option":None, "prefix":None, "suffix":None, "arch":None, "extension":None, "platform":None },
                        { "option":1, "prefix":"tet-win-sensor-", "suffix":".win64", "arch":"x86_64", "extension":".zip", "platform":"MSWindows10Pro" },
                        { "option":2, "prefix":"tet-sensor-", "suffix":".el5", "arch":"x86_64", "extension":".rpm", "platform":"CentOS-5.11" },
@@ -51,6 +51,9 @@ def download_agent(agent_options):
 
     agent_platform = agent_metadata[platform_opt]['platform']
     agent_arch = agent_metadata[platform_opt]['arch']
+
+    #agent_pkg_type = 'sensor_w_cfg'
+    agent_pkg_type = 'sensor_bin_pkg'
 
     host=env.TET_HOST.get("host")
     api_key=env.TET_API_KEY
@@ -79,7 +82,7 @@ def download_agent(agent_options):
     agent_filename = agent_metadata[platform_opt]['prefix'] + agent_version + agent_metadata[platform_opt]['suffix'] + '.' + agent_arch + agent_metadata[platform_opt]['extension']
 
     # Now that we have the filename, we can create the download URL
-    download_url = "/sw_assets/download?platform=" + agent_platform + "&agent_type=" + agent_type + "&arch=" + agent_arch
+    download_url = "/sw_assets/download?platform=" + agent_platform + "&agent_type=" + agent_type +"&pkg_type=" + agent_pkg_type + "&arch=" + agent_arch
 
     # Download agent
     print (" Downloading agent...")

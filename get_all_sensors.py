@@ -50,7 +50,7 @@ def get_sensors(
 
     # If response code is anything but 200, print error message with response code
     else:
-        print(f"IP Address {value} can not be found. Error code {response.status_code}.")
+        print(f"Error code: {response.status_code} getting sensors: {response.content}")
 
 ######################################################################
 # Print sensors
